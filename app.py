@@ -7,6 +7,7 @@ from langchain_community.document_loaders import PDFPlumberLoader
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_retrieval_chain
 from langchain.prompts import PromptTemplate
+import sqlite3
 
 app = Flask(__name__)
 
@@ -15,6 +16,40 @@ folder_path = "db"
 cached_llm = Ollama(model="llama3")
 
 embedding = FastEmbedEmbeddings()
+
+def createTableIfItDoesNotExist(cursor):
+    try:
+        cursor.execute('''CREATE TABLE MESSAGES (
+        conversation_id VARCHAR(255),
+        message_id VARCHAR(255),
+        timestamp TIMESTAMP,
+        message VARCHAR(255),
+        role VARCHAR(255))''')
+    except:
+        print("Table already exists")
+
+def writeToDB(query, path):
+    # TODO replace with path here
+    conn = sqlite3.connect('./RAG/records.db')
+    cursor = conn.cursor()
+    createTableIfItDoesNotExist(cursor)
+    conn.execute(query)
+    conn.commit()
+    conn.close()
+    
+
+def readFromDB(query, path):
+    # TODO replace with path here
+    conn = sqlite3.connect('./RAG/records.db')
+    cursor = conn.cursor()
+    createTableIfItDoesNotExist(cursor)
+    cursor.execute(query)
+    value = cursor.fetchall()
+    
+    conn.close()
+    return value
+    
+
 
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=1024, chunk_overlap=80, length_function=len, is_separator_regex=False
